@@ -62,13 +62,13 @@
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import ReferentForm from '@/components/ReferentForm.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import ReferentForm from '@/components/ReferentForm.vue';
 
 const props = defineProps({
-    shipment: Array,
+    shipment: Object,
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
