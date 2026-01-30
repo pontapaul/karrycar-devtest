@@ -57,7 +57,18 @@ class ShipmentsController extends Controller
         $validated['team_id'] = $shipment->team_id;
         $pivotAttributes = ['scope' => $validated['scope']];
 
-        $referent = $shipment->referents()->create($validated, $pivotAttributes);
+        if ($referent = Referent::query()->where(['email' => $validated['email'], 'team_id' => $shipment->team_id])->first()) {
+            if ($shipment->referents()->where(['referent_id' => $referent->id, ...$pivotAttributes])->first()) {
+                return response()->json([
+                    'message' => 'A referent with the same email in this team is already linked to this shipment.',
+                ], 409);
+            }
+
+            $referent->update($validated);
+            $shipment->referents()->save($referent, $pivotAttributes);
+        } else {
+            $referent = $shipment->referents()->create($validated, $pivotAttributes);
+        }
 
         return response()->json($referent, 201);
     }

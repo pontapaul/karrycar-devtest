@@ -28,6 +28,10 @@
                class="mb-2"
                required />
 
+        <AlertError class="mb-2"
+                    v-if="errors?.length"
+                    :errors="errors" />
+
         <Button type="submit"
                 variant="outline"
                 :disabled="loading">
@@ -39,8 +43,9 @@
 <script setup lang="ts">
 import axios from 'axios';
 import { reactive, ref } from 'vue';
-import { Input } from '@/components/ui/input'
+import AlertError from '@/components/AlertError.vue'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const props = defineProps<{
     shipmentId: number | string;
@@ -62,6 +67,8 @@ const form = reactive({
 
 const loading = ref(false);
 
+const errors = ref([]);
+
 const submitForm = async () => {
     loading.value = true;
     try {
@@ -75,7 +82,7 @@ const submitForm = async () => {
         window.location.reload();
 
     } catch (error) {
-        console.error('Error saving referent:', error);
+        errors.value = [error.response.data.message];
         emit('error', error);
     } finally {
         loading.value = false;
@@ -87,5 +94,6 @@ const resetForm = () => {
     form.last_name = '';
     form.email = '';
     form.phone = '';
+    errors.value = [];
 };
 </script>
