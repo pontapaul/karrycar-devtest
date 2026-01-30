@@ -66,7 +66,12 @@ class RollbackReferents extends Command
         $this->info('Backup restored from: ' . $path);
     }
 
-    private function resolveBackupFile(): string
+    /**
+     * Get the file path. If not argument is passed to the command, the latest backup will be returned
+     *
+     * @return string
+     */
+    protected function resolveBackupFile(): string
     {
         $input = $this->argument('file');
 

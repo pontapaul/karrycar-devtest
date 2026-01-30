@@ -70,6 +70,12 @@ class NormalizeReferents extends Command
         }
     }
 
+    /**
+     * Create a backup .mysql file containing the structure and contents of [`referents`, `referent_shipment`] tables.
+     * By default, the file is saved in storage/app/private/backups/referents/{timestamp}.mysql
+     *
+     * @return string the file path in storage
+     */
     protected function backupReferentTables(): string
     {
         $timestamp = now()->timestamp;
@@ -86,7 +92,7 @@ class NormalizeReferents extends Command
             '--single-transaction',
             '--skip-lock-tables',
             '-h', $config['host'] ?? '127.0.0.1',
-            '-P', (string) ($config['port'] ?? 3306),
+            '-P', (string)($config['port'] ?? 3306),
             '-u', $config['username'] ?? 'root',
             '-p' . $config['password'],
             $config['database'],
@@ -105,6 +111,12 @@ class NormalizeReferents extends Command
         return Storage::path($path);
     }
 
+    /**
+     * Creates a MySQL temporary table `referents_map` to store the referents IDs map
+     *
+     * @param Connection $connection
+     * @return int the number of elements in the temporary table
+     */
     protected function createTemporaryMapTable(Connection $connection): int
     {
         $success = $connection->statement("
@@ -115,7 +127,7 @@ class NormalizeReferents extends Command
             )
         ");
 
-        if(!$success) {
+        if (!$success) {
             throw new \RuntimeException('Referents map could not be created.');
         }
 
@@ -134,13 +146,19 @@ class NormalizeReferents extends Command
             WHERE r.id <> k.new_id
         ");
 
-        if(!$success) {
+        if (!$success) {
             throw new \RuntimeException('Referents map could not be populated.');
         }
 
         return intval($connection->selectOne('SELECT COUNT(*) AS c FROM referents_map')->c);
     }
 
+    /**
+     * Replaces the foreign keys in `referent_shipment` based on the previously generated `referents_map`
+     *
+     * @param Connection $connection
+     * @return int the number of updated rows
+     */
     protected function replaceForeignKeys(Connection $connection): int
     {
         return $connection->update("
@@ -150,6 +168,12 @@ class NormalizeReferents extends Command
         ");
     }
 
+    /**
+     * Delete duplicated rows in the pivot table `referent_shipment`.
+     *
+     * @param Connection $connection
+     * @return int the number of deleted rows
+     */
     protected function deleteDuplicatedPivotRows(Connection $connection): int
     {
         return $connection->delete("
@@ -157,12 +181,18 @@ class NormalizeReferents extends Command
             FROM referent_shipment rs1
             JOIN referent_shipment rs2
                 ON rs1.shipment_id = rs2.shipment_id
-                AND rs1.referent_id  = rs2.referent_id
-                AND rs1.scope  = rs2.scope
+                AND rs1.referent_id = rs2.referent_id
+                AND rs1.scope = rs2.scope
                 AND rs1.id < rs2.id
         ");
     }
 
+    /**
+     * Delete duplicated referents rows in `referents`
+     *
+     * @param Connection $connection
+     * @return int the number of deleted referents
+     */
     protected function deleteDuplicatedReferents(Connection $connection): int
     {
         return $connection->delete("
@@ -173,6 +203,11 @@ class NormalizeReferents extends Command
         ");
     }
 
+    /**
+     * Adds unique constraint on (email, team_id) in `referents` table
+     *
+     * @return bool
+     */
     protected function addReferentsUniqueConstraint(): bool
     {
         $success = DB::statement("
@@ -180,7 +215,7 @@ class NormalizeReferents extends Command
                 ADD UNIQUE referents_email_team_id_unique (email, team_id)
         ");
 
-        if(!$success) {
+        if (!$success) {
             throw new \RuntimeException('Referents unique constraint could not be added.');
         }
 
