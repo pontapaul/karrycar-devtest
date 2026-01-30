@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Referent;
 use App\Models\Shipment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,7 +15,7 @@ class ShipmentsController extends Controller
     public function index()
     {
         return Inertia::render('Shipments/Index', [
-            'shipments' => Shipment::with('referents','team')->limit(100)->get(),
+            'shipments' => Shipment::with('referents', 'team')->limit(100)->get(),
         ]);
     }
 
@@ -51,10 +52,12 @@ class ShipmentsController extends Controller
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
+            'scope' => 'required|string|in:start,end',
         ]);
         $validated['team_id'] = $shipment->team_id;
+        $pivotAttributes = ['scope' => $validated['scope']];
 
-        $referent = $shipment->referents()->create($validated);
+        $referent = $shipment->referents()->create($validated, $pivotAttributes);
 
         return response()->json($referent, 201);
     }
