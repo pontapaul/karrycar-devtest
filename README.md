@@ -15,6 +15,8 @@ Come possiamo risolvere questo problema al fine di migliorare la nostra applicaz
 
 # Soluzione
 
+### Backend
+
 È stato creato il comando Artisan `referents:normalize`, pensato per normalizzare i referenti duplicati presenti nel database.
 
 Il comando identifica i referenti duplicati utilizzando la coppia (email, team_id) come chiave logica e:
@@ -27,7 +29,13 @@ L’operazione è supportata da un backup delle tabelle `referents` e `referent_
 
 È stato inoltre implementato un test che verifica il corretto funzionamento del comando sia su un set minimo di elementi sia sui dati generati dal seeder.
 
-### Considerazioni sull'implementazione
+### Frontend
+Il form dei referenti è stato aggiornato per prevenire la creazione di duplicati: prima di creare un nuovo referente viene verificata l’esistenza di uno con la stessa (email, team_id), che viene riutilizzato e aggiornato se presente.
+Nel caso in cui si tenti di associare un referente già esistente allo stesso shipment, il sistema restituisce un errore mostrato tramite il componente `AlertError`.
+
+Con questa modifica è anche stato fixato un bug nel `ShipmentController` per cui il parametro scope non veniva utilizzato.
+
+## Considerazioni sull'implementazione
 Inizialmente ero partito con l'idea di sfruttare la funzione `chunk` del query builder di laravel per scorrere gli id "da mantenere" e conseguentemente sostituire quelli vecchi.
 Mi sono però subito reso conto che con un dataset come quello fornito dal seeder (circa ~12k righe) avrei comunque eseguito all'incirca 1500 query.
 Nonostante questo carico sia tranquillamente sostenibile, sarebbe comunque stato relativamente lungo e quindi uno spreco di risorse.
